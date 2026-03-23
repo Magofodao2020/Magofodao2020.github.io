@@ -1,281 +1,416 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>.</title>
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System Scan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-/* ============================================================
-   CONFIGURE AQUI:
-   1. Troque o ID do YouTube abaixo (parte após ?v= na URL)
-   2. Cole a URL direta do seu MP3 (ex: catbox.moe)
-   ============================================================ */
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-body {
-  background: #000;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  cursor: none;
-}
+    body {
+      background: #000;
+      color: #ff2222;
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      overflow: hidden;
+      cursor: none;
+    }
 
-/* vídeo YouTube de fundo via iframe */
-#yt-bg {
-  position: fixed;
-  top: 50%; left: 50%;
-  width: 177.78vh; /* 16:9 */
-  height: 100vh;
-  min-width: 100vw;
-  min-height: 56.25vw;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  opacity: 0.18;
-  z-index: 0;
-}
+    #bg-video,
+    #yt-bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.18;
+      z-index: 0;
+      pointer-events: none;
+    }
 
-/* scanlines */
-body::after {
-  content:'';
-  position:fixed; inset:0;
-  background: repeating-linear-gradient(
-    0deg, transparent, transparent 2px,
-    rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px
-  );
-  pointer-events:none;
-  z-index:50;
-}
+    #yt-bg {
+      top: 50%;
+      left: 50%;
+      width: 177.78vh;
+      height: 100vh;
+      min-width: 100vw;
+      min-height: 56.25vw;
+      transform: translate(-50%, -50%);
+      border: none;
+    }
 
-#data {
-  position: relative;
-  z-index: 10;
-  text-align: center;
-  color: #ff1111;
-  font-family: monospace;
-  font-size: clamp(12px, 2vw, 17px);
-  line-height: 1.95;
-  padding: 2rem;
-  max-width: 95vw;
-}
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.18) 2px,
+        rgba(0, 0, 0, 0.18) 4px
+      );
+      pointer-events: none;
+      z-index: 50;
+    }
 
-#cursor-txt {
-  position: fixed;
-  pointer-events: none;
-  z-index: 200;
-  font-family: monospace;
-  font-size: 11px;
-  color: #ff0000;
-  opacity: 0.5;
-  transform: translate(8px, -50%);
-}
-</style>
+    #content {
+      position: relative;
+      z-index: 10;
+      padding: 32px 40px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .line {
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+      font-size: clamp(13px, 1.6vw, 16px);
+      line-height: 1.95;
+      white-space: nowrap;
+    }
+
+    .line.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .label {
+      color: #550000;
+      margin-right: 1ch;
+    }
+
+    .value {
+      color: #ff2a2a;
+    }
+
+    .value.green {
+      color: #00ff66;
+    }
+
+    .value.amber {
+      color: #ffaa00;
+    }
+
+    .value.dim {
+      color: #555;
+    }
+
+    #cursor-follow {
+      position: fixed;
+      pointer-events: none;
+      z-index: 200;
+      font-size: 11px;
+      color: #ff0000;
+      opacity: 0.6;
+      white-space: nowrap;
+      transform: translate(10px, -50%);
+      font-family: 'Share Tech Mono', monospace;
+    }
+  </style>
 </head>
 <body>
 
-<!-- ===== VÍDEO DE FUNDO ===== -->
-<!-- Troque "dQw4w9WgXcQ" pelo ID do seu vídeo do YouTube -->
-<iframe id="yt-bg"
-  src="https://www.youtube.com/embed/bImHKGJqzFw?autoplay=1&mute=1&loop=1&playlist=bImHKGJqzFw&controls=0&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&modestbranding=1"
-  frameborder="0"
-  allow="autoplay; encrypted-media"
-  allowfullscreen>
-</iframe>
+  <!-- Use ONE background option only -->
 
-<!-- ===== MÚSICA DE FUNDO ===== -->
-<!-- Cole a URL direta do seu MP3 (catbox.moe ou qualquer host) -->
-<audio id="music" loop>
-  <source src="https://files.catbox.moe/kmugk9.mp3" type="audio/mpeg">
-</audio>
+  <!-- Local video -->
+  <!--
+  <video id="bg-video" autoplay loop muted playsinline>
+    <source src="video.mp4" type="video/mp4">
+  </video>
+  -->
 
-<div id="cursor-txt"></div>
-<div id="data"></div>
+  <!-- YouTube background -->
+  <iframe
+    id="yt-bg"
+    src="https://www.youtube.com/embed/bImHKGJqzFw?autoplay=1&mute=1&loop=1&playlist=bImHKGJqzFw&controls=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1"
+    allow="autoplay; encrypted-media"
+    allowfullscreen>
+  </iframe>
 
-<script>
-// cursor
-document.addEventListener('mousemove', e => {
-  const c = document.getElementById('cursor-txt');
-  c.style.left = e.clientX + 'px';
-  c.style.top  = e.clientY + 'px';
-  c.textContent = e.clientX + ' ' + e.clientY;
-});
+  <!-- Background music -->
+  <audio id="music" loop>
+    <source src="https://files.catbox.moe/kmugk9.mp3" type="audio/mpeg">
+  </audio>
 
-// música
-const music = document.getElementById('music');
-music.volume = 0.5;
-const tryPlay = () => music.play().catch(()=>{});
-tryPlay();
-['click','keydown','touchstart'].forEach(ev =>
-  document.addEventListener(ev, tryPlay, { once: true })
-);
+  <div id="cursor-follow"></div>
+  <div id="content"></div>
 
-// ---- coleta tudo ----
-const ua  = navigator.userAgent;
-const nav = navigator;
-const scr = screen;
-const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
+  <script>
+    const content = document.getElementById("content");
+    const cursor = document.getElementById("cursor-follow");
+    const music = document.getElementById("music");
 
-function os(ua) {
-  if (/Windows NT 10|Windows NT 11/.test(ua)) return 'Windows 10/11';
-  if (/Windows NT 6.3/.test(ua)) return 'Windows 8.1';
-  if (/Windows NT 6.1/.test(ua)) return 'Windows 7';
-  if (/Mac OS X/.test(ua)) return 'macOS ' + (ua.match(/Mac OS X ([0-9_]+)/)||['',''])[1].replace(/_/g,'.');
-  if (/Android/.test(ua)) return 'Android ' + (ua.match(/Android ([0-9.]+)/)||['',''])[1];
-  if (/iPhone/.test(ua)) return 'iOS — iPhone';
-  if (/iPad/.test(ua))   return 'iOS — iPad';
-  if (/CrOS/.test(ua))   return 'Chrome OS';
-  if (/Linux/.test(ua))  return 'Linux';
-  return ua;
-}
+    const PAD = 20;
+    const revealDelay = 220;
 
-function browser(ua) {
-  if (/Edg\//.test(ua))     return 'Microsoft Edge '  + (ua.match(/Edg\/([0-9]+)/)||['',''])[1];
-  if (/OPR\//.test(ua))     return 'Opera '            + (ua.match(/OPR\/([0-9]+)/)||['',''])[1];
-  if (/Brave/.test(ua))     return 'Brave';
-  if (/YaBrowser/.test(ua)) return 'Yandex Browser';
-  if (/Chrome\//.test(ua))  return 'Google Chrome '   + (ua.match(/Chrome\/([0-9]+)/)||['',''])[1];
-  if (/Firefox\//.test(ua)) return 'Mozilla Firefox '  + (ua.match(/Firefox\/([0-9]+)/)||['',''])[1];
-  if (/Safari\//.test(ua))  return 'Safari';
-  return 'desconhecido';
-}
+    const valuesMap = new Map();
+    const rowMap = new Map();
 
-function gpu() {
-  try {
-    const gl  = document.createElement('canvas').getContext('webgl') ||
-                document.createElement('canvas').getContext('experimental-webgl');
-    const ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
-    return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : '—';
-  } catch(e) { return '—'; }
-}
+    document.addEventListener("mousemove", (e) => {
+      cursor.style.left = e.clientX + "px";
+      cursor.style.top = e.clientY + "px";
+      cursor.textContent = `${e.clientX}, ${e.clientY}`;
+    });
 
-function vendor() {
-  try {
-    const gl  = document.createElement('canvas').getContext('webgl');
-    const ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
-    return ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : '—';
-  } catch(e) { return '—'; }
-}
+    music.volume = 0.45;
+    const tryPlayMusic = () => music.play().catch(() => {});
+    tryPlayMusic();
+    ["click", "keydown", "touchstart"].forEach((ev) => {
+      document.addEventListener(ev, tryPlayMusic, { once: true });
+    });
 
-function tzOffset() {
-  const off = -new Date().getTimezoneOffset();
-  const h = Math.floor(Math.abs(off)/60).toString().padStart(2,'0');
-  const m = (Math.abs(off)%60).toString().padStart(2,'0');
-  return 'UTC' + (off >= 0 ? '+' : '-') + h + ':' + m;
-}
+    function safe(value, fallback = "UNAVAILABLE") {
+      if (value === undefined || value === null || value === "") return fallback;
+      return String(value);
+    }
 
-function colorDepth(d) {
-  const map = {24:'16 milhões de cores (24-bit)',30:'1 bilhão de cores (30-bit)',32:'32-bit',16:'65 mil cores (16-bit)'};
-  return map[d] || d + '-bit';
-}
+    function utcOffsetString() {
+      const offset = -new Date().getTimezoneOffset();
+      const sign = offset >= 0 ? "+" : "-";
+      const abs = Math.abs(offset);
+      const hours = String(Math.floor(abs / 60)).padStart(2, "0");
+      const mins = String(abs % 60).padStart(2, "0");
+      return `UTC${sign}${hours}:${mins}`;
+    }
 
-const data = document.getElementById('data');
-const lines = [];
+    function detectOS(ua) {
+      if (/Windows NT 10|Windows NT 11/.test(ua)) return "Windows 10 / 11";
+      if (/Windows NT 6.3/.test(ua)) return "Windows 8.1";
+      if (/Windows NT 6.1/.test(ua)) return "Windows 7";
+      if (/Mac OS X/.test(ua)) {
+        const match = ua.match(/Mac OS X ([0-9_]+)/);
+        return "macOS " + (match ? match[1].replace(/_/g, ".") : "");
+      }
+      if (/Android/.test(ua)) {
+        const match = ua.match(/Android ([0-9.]+)/);
+        return "Android " + (match ? match[1] : "");
+      }
+      if (/iPhone/.test(ua)) return "iPhone / iOS";
+      if (/iPad/.test(ua)) return "iPad / iPadOS";
+      if (/CrOS/.test(ua)) return "Chrome OS";
+      if (/Linux/.test(ua)) return "Linux";
+      return "UNKNOWN";
+    }
 
-function add(v) { if (v !== undefined && v !== null && v !== '') lines.push(String(v)); }
+    function detectBrowser(ua) {
+      if (/Edg\//.test(ua)) return "Microsoft Edge " + ((ua.match(/Edg\/([0-9]+)/) || ["", ""])[1]);
+      if (/OPR\//.test(ua)) return "Opera " + ((ua.match(/OPR\/([0-9]+)/) || ["", ""])[1]);
+      if (/Firefox\//.test(ua)) return "Mozilla Firefox " + ((ua.match(/Firefox\/([0-9]+)/) || ["", ""])[1]);
+      if (/Chrome\//.test(ua)) return "Google Chrome " + ((ua.match(/Chrome\/([0-9]+)/) || ["", ""])[1]);
+      if (/Safari\//.test(ua)) return "Safari";
+      return "UNKNOWN";
+    }
 
-// ---- dados locais imediatos ----
-add(new Date().toLocaleString('pt-BR', {weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}));
-add(tzOffset() + ' — ' + Intl.DateTimeFormat().resolvedOptions().timeZone);
-add(os(ua));
-add(browser(ua));
-add(nav.platform || '—');
-add(scr.width + ' × ' + scr.height + ' px  /  viewport ' + window.innerWidth + ' × ' + window.innerHeight + ' px');
-add('pixel ratio  ' + (window.devicePixelRatio || 1) + 'x');
-add(colorDepth(scr.colorDepth));
-add(nav.language + (nav.languages && nav.languages.length > 1 ? '  (' + Array.from(nav.languages).join(', ') + ')' : ''));
-add('ram  ' + (nav.deviceMemory ? nav.deviceMemory + ' GB' : 'não exposto'));
-add((nav.hardwareConcurrency || '—') + ' núcleos de cpu lógicos');
-add('gpu  ' + gpu());
-add('fabricante gpu  ' + vendor());
-add('touch points  ' + nav.maxTouchPoints);
-add('cookies  ' + (nav.cookieEnabled ? 'habilitados' : 'desabilitados'));
-add('do not track  ' + (nav.doNotTrack || 'não configurado'));
-add('java  ' + (nav.javaEnabled ? nav.javaEnabled() ? 'sim' : 'não' : 'não'));
-add('plugins  ' + (nav.plugins ? nav.plugins.length : '0'));
+    function getGPU() {
+      try {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (!gl) return "UNAVAILABLE";
 
-if (conn) {
-  add((conn.effectiveType||'?').toUpperCase()
-    + (conn.type ? ' / ' + conn.type : '')
-    + (conn.downlink != null ? ' / ' + conn.downlink + ' Mbps downlink' : '')
-    + (conn.rtt != null ? ' / rtt ' + conn.rtt + 'ms' : '')
-    + (conn.saveData ? ' / modo economia de dados ativo' : ''));
-}
+        const ext = gl.getExtension("WEBGL_debug_renderer_info");
+        if (!ext) return "UNAVAILABLE";
 
-add('online  ' + nav.onLine);
+        return gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || "UNAVAILABLE";
+      } catch {
+        return "UNAVAILABLE";
+      }
+    }
 
-// renderiza o que temos agora
-render();
+    function getVendor() {
+      try {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (!gl) return "UNAVAILABLE";
 
-// bateria (async)
-if (nav.getBattery) {
-  nav.getBattery().then(b => {
-    const pct = Math.round(b.level * 100);
-    const status = b.charging
-      ? (b.chargingTime < Infinity ? 'completa em ' + Math.ceil(b.chargingTime/60) + 'min' : 'carregando')
-      : (b.dischargingTime < Infinity ? 'acaba em ' + Math.ceil(b.dischargingTime/60) + 'min' : 'na bateria');
-    lines.splice(lines.length - 3, 0, 'bateria  ' + pct + '%  ' + status);
-    render();
-  }).catch(()=>{});
-}
+        const ext = gl.getExtension("WEBGL_debug_renderer_info");
+        if (!ext) return "UNAVAILABLE";
 
-// geolocalização por IP — tenta duas APIs
-function fetchGeo() {
-  return fetch('https://ipapi.co/json/')
-    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-    .then(d => {
-      if (!d.ip) throw new Error();
-      return d;
-    })
-    .catch(() =>
-      fetch('https://ip-api.com/json/?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query')
-        .then(r => r.json())
-        .then(d => ({
-          ip: d.query,
-          city: d.city,
-          region: d.regionName,
-          country_name: d.country,
-          country: d.countryCode,
-          postal: d.zip,
-          latitude: d.lat,
-          longitude: d.lon,
-          timezone: d.timezone,
-          org: d.isp,
-          asn: d.as,
-        }))
-    );
-}
+        return gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) || "UNAVAILABLE";
+      } catch {
+        return "UNAVAILABLE";
+      }
+    }
 
-fetchGeo().then(d => {
-  const geo = [
-    d.ip,
-    d.org || '—',
-    d.asn || '',
-    (d.city || '—') + (d.postal ? ',  CEP ' + d.postal : ''),
-    d.region || '—',
-    (d.country_name || '—') + ' (' + (d.country || '') + ')',
-    (d.latitude || '?') + ', ' + (d.longitude || '?'),
-    d.timezone || '—',
-  ].filter(Boolean);
+    function addRow(key, label, value, cls = "") {
+      valuesMap.set(key, { label, value, cls });
+    }
 
-  // insere no começo, depois da data/hora
-  lines.splice(1, 0, ...geo);
-  render();
-}).catch(() => {
-  lines.splice(1, 0, 'ip  —  falha na resolução');
-  render();
-});
+    function updateRow(key, newValue, newClass = null) {
+      const current = valuesMap.get(key);
+      if (!current) return;
 
-// atualiza hora a cada segundo
-setInterval(() => {
-  lines[0] = new Date().toLocaleString('pt-BR', {weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  render();
-}, 1000);
+      current.value = safe(newValue);
+      if (newClass !== null) current.cls = newClass;
 
-function render() {
-  data.innerHTML = lines.map(l => '<div>' + l + '</div>').join('');
-}
-</script>
+      const row = rowMap.get(key);
+      if (!row) return;
+
+      const valueEl = row.querySelector(".value");
+      valueEl.textContent = current.value;
+      valueEl.className = "value" + (current.cls ? ` ${current.cls}` : "");
+    }
+
+    function renderRowsSlowly() {
+      let index = 0;
+
+      for (const [key, item] of valuesMap.entries()) {
+        const line = document.createElement("div");
+        line.className = "line";
+
+        const paddedLabel = item.label.padEnd(PAD, "\u00A0");
+        line.innerHTML = `
+          <span class="label">${paddedLabel}</span>
+          <span class="value ${item.cls || ""}">${safe(item.value)}</span>
+        `;
+
+        content.appendChild(line);
+        rowMap.set(key, line);
+
+        setTimeout(() => {
+          line.classList.add("show");
+        }, index * revealDelay);
+
+        index++;
+      }
+    }
+
+    async function fetchGeoData() {
+      const endpoints = [
+        "https://ipapi.co/json/",
+        "https://ipwho.is/"
+      ];
+
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+
+          if (url.includes("ipapi.co") && data.ip) {
+            return {
+              ip: data.ip,
+              isp: data.org,
+              city: data.city,
+              region: data.region,
+              country: data.country_name,
+              countryCode: data.country,
+              coords: `${safe(data.latitude, "?")}, ${safe(data.longitude, "?")}`,
+              timezone: data.timezone
+            };
+          }
+
+          if (url.includes("ipwho.is") && data.success) {
+            return {
+              ip: data.ip,
+              isp: data.connection?.isp || data.connection?.org,
+              city: data.city,
+              region: data.region,
+              country: data.country,
+              countryCode: data.country_code,
+              coords: `${safe(data.latitude, "?")}, ${safe(data.longitude, "?")}`,
+              timezone: data.timezone?.id
+            };
+          }
+        } catch (err) {}
+      }
+
+      return null;
+    }
+
+    const ua = navigator.userAgent;
+    const nav = navigator;
+    const scr = screen;
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+    addRow("datetime",  "DATE / TIME", new Date().toLocaleString("en-US"), "green");
+    addRow("timezone",  "TIME ZONE", `${utcOffsetString()} / ${Intl.DateTimeFormat().resolvedOptions().timeZone}`, "amber");
+
+    addRow("ip",        "IP ADDRESS", "LOADING...");
+    addRow("isp",       "ISP", "LOADING...");
+    addRow("city",      "CITY", "LOADING...");
+    addRow("region",    "REGION", "LOADING...");
+    addRow("country",   "COUNTRY", "LOADING...");
+    addRow("coords",    "COORDINATES", "LOADING...");
+
+    addRow("os",        "OPERATING SYSTEM", detectOS(ua), "amber");
+    addRow("browser",   "BROWSER", detectBrowser(ua));
+    addRow("platform",  "PLATFORM", safe(nav.platform));
+    addRow("screen",    "SCREEN", `${scr.width} × ${scr.height}`);
+    addRow("viewport",  "VIEWPORT", `${window.innerWidth} × ${window.innerHeight}`);
+    addRow("ratio",     "PIXEL RATIO", `${window.devicePixelRatio || 1}x`);
+    addRow("language",  "LANGUAGE", safe(nav.language));
+    addRow("memory",    "RAM", nav.deviceMemory ? `${nav.deviceMemory} GB` : "UNAVAILABLE");
+    addRow("cpu",       "CPU CORES", safe(nav.hardwareConcurrency));
+    addRow("gpu",       "GPU", getGPU(), getGPU() === "UNAVAILABLE" ? "dim" : "");
+    addRow("vendor",    "GPU VENDOR", getVendor(), getVendor() === "UNAVAILABLE" ? "dim" : "");
+    addRow("cookies",   "COOKIES", nav.cookieEnabled ? "ENABLED" : "DISABLED");
+    addRow("online",    "ONLINE", nav.onLine ? "YES" : "NO");
+    addRow("touch",     "TOUCH POINTS", safe(nav.maxTouchPoints, "0"));
+
+    if (conn) {
+      addRow(
+        "connection",
+        "CONNECTION",
+        `${safe(conn.effectiveType, "?").toUpperCase()}${conn.downlink ? ` / ${conn.downlink} Mbps` : ""}${conn.rtt ? ` / ${conn.rtt} ms` : ""}`
+      );
+    } else {
+      addRow("connection", "CONNECTION", "UNAVAILABLE", "dim");
+    }
+
+    addRow("battery", "BATTERY", "LOADING...");
+
+    renderRowsSlowly();
+
+    setInterval(() => {
+      updateRow("datetime", new Date().toLocaleString("en-US"));
+    }, 1000);
+
+    if (navigator.getBattery) {
+      navigator.getBattery()
+        .then((battery) => {
+          function refreshBattery() {
+            const percent = Math.round(battery.level * 100);
+            const status = battery.charging ? "CHARGING" : "DISCHARGING";
+            updateRow("battery", `${percent}% / ${status}`, percent <= 20 ? "" : "green");
+          }
+
+          refreshBattery();
+          battery.addEventListener("chargingchange", refreshBattery);
+          battery.addEventListener("levelchange", refreshBattery);
+        })
+        .catch(() => {
+          updateRow("battery", "UNAVAILABLE", "dim");
+        });
+    } else {
+      updateRow("battery", "UNAVAILABLE", "dim");
+    }
+
+    fetchGeoData().then((geo) => {
+      if (!geo) {
+        updateRow("ip", "UNAVAILABLE", "dim");
+        updateRow("isp", "UNAVAILABLE", "dim");
+        updateRow("city", "UNAVAILABLE", "dim");
+        updateRow("region", "UNAVAILABLE", "dim");
+        updateRow("country", "UNAVAILABLE", "dim");
+        updateRow("coords", "UNAVAILABLE", "dim");
+        return;
+      }
+
+      updateRow("ip", geo.ip || "UNAVAILABLE");
+      updateRow("isp", geo.isp || "UNAVAILABLE");
+      updateRow("city", geo.city || "UNAVAILABLE", "amber");
+      updateRow("region", geo.region || "UNAVAILABLE");
+      updateRow("country", `${geo.country || "UNAVAILABLE"}${geo.countryCode ? ` (${geo.countryCode})` : ""}`);
+      updateRow("coords", geo.coords || "UNAVAILABLE");
+      updateRow("timezone", geo.timezone ? `${utcOffsetString()} / ${geo.timezone}` : valuesMap.get("timezone").value, "amber");
+    });
+  </script>
 </body>
 </html>
