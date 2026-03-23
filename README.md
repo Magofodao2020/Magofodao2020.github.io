@@ -4,228 +4,278 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>.</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin:0; padding:0; box-sizing:border-box; }
 
-  body {
-    background: #000;
-    font-family: 'Share Tech Mono', monospace;
-    min-height: 100vh;
-    cursor: none;
-  }
+/* ============================================================
+   CONFIGURE AQUI:
+   1. Troque o ID do YouTube abaixo (parte após ?v= na URL)
+   2. Cole a URL direta do seu MP3 (ex: catbox.moe)
+   ============================================================ */
 
-  #bg-video {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.2;
-    z-index: 0;
-    pointer-events: none;
-  }
+body {
+  background: #000;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: none;
+}
 
-  /* scanlines */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent 2px,
-      rgba(0,0,0,0.2) 2px, rgba(0,0,0,0.2) 4px
-    );
-    pointer-events: none;
-    z-index: 50;
-  }
+/* vídeo YouTube de fundo via iframe */
+#yt-bg {
+  position: fixed;
+  top: 50%; left: 50%;
+  width: 177.78vh; /* 16:9 */
+  height: 100vh;
+  min-width: 100vw;
+  min-height: 56.25vw;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.18;
+  z-index: 0;
+}
 
-  #content {
-    position: relative;
-    z-index: 10;
-    padding: 2.5rem 3rem;
-  }
+/* scanlines */
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px
+  );
+  pointer-events:none;
+  z-index:50;
+}
 
-  .line {
-    font-size: clamp(13px, 1.8vw, 15px);
-    line-height: 2;
-    opacity: 0;
-    white-space: nowrap;
-  }
-  .line.show { opacity: 1; }
-  .label { color: #3a0000; margin-right: 1ch; }
-  .val { color: #ff2222; }
-  .val.green { color: #00ff66; }
-  .val.amber { color: #ffaa00; }
-  .val.dim   { color: #333; }
+#data {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  color: #ff1111;
+  font-family: monospace;
+  font-size: clamp(12px, 2vw, 17px);
+  line-height: 1.95;
+  padding: 2rem;
+  max-width: 95vw;
+}
 
-  #cursor-follow {
-    position: fixed;
-    pointer-events: none;
-    z-index: 200;
-    font-size: 11px;
-    color: #ff0000;
-    font-family: 'Share Tech Mono', monospace;
-    opacity: 0.6;
-    white-space: nowrap;
-    transform: translate(10px, -50%);
-  }
+#cursor-txt {
+  position: fixed;
+  pointer-events: none;
+  z-index: 200;
+  font-family: monospace;
+  font-size: 11px;
+  color: #ff0000;
+  opacity: 0.5;
+  transform: translate(8px, -50%);
+}
 </style>
 </head>
 <body>
 
-<!--
-  ===================================================
-  COLOQUE SEU VÍDEO: renomeie para "video.mp4"
-  e coloque na mesma pasta que este arquivo.
-  ===================================================
--->
-<video id="bg-video" autoplay loop muted playsinline>
-  <source src="video.mp4" type="video/mp4">
-</video>
+<!-- ===== VÍDEO DE FUNDO ===== -->
+<!-- Troque "dQw4w9WgXcQ" pelo ID do seu vídeo do YouTube -->
+<iframe id="yt-bg"
+  src="https://www.youtube.com/embed/bImHKGJqzFw?autoplay=1&mute=1&loop=1&playlist=bImHKGJqzFw&controls=0&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&modestbranding=1"
+  frameborder="0"
+  allow="autoplay; encrypted-media"
+  allowfullscreen>
+</iframe>
 
-<!--
-  ===================================================
-  COLOQUE SUA MÚSICA: renomeie para "musica.mp3"
-  e coloque na mesma pasta que este arquivo.
-  ===================================================
--->
-<audio id="bg-music" loop>
-  <source src="musica.mp3" type="audio/mpeg">
+<!-- ===== MÚSICA DE FUNDO ===== -->
+<!-- Cole a URL direta do seu MP3 (catbox.moe ou qualquer host) -->
+<audio id="music" loop>
+  <source src="https://files.catbox.moe/kmugk9.mp3" type="audio/mpeg">
 </audio>
 
-<div id="cursor-follow"></div>
-<div id="content"></div>
+<div id="cursor-txt"></div>
+<div id="data"></div>
 
 <script>
-// cursor personalizado
+// cursor
 document.addEventListener('mousemove', e => {
-  const c = document.getElementById('cursor-follow');
+  const c = document.getElementById('cursor-txt');
   c.style.left = e.clientX + 'px';
   c.style.top  = e.clientY + 'px';
-  c.textContent = e.clientX + ', ' + e.clientY;
+  c.textContent = e.clientX + ' ' + e.clientY;
 });
 
-// música — tenta autoplay, senão aguarda interação
-const music = document.getElementById('bg-music');
-music.volume = 0.4;
-music.play().catch(() => {
-  document.addEventListener('click', () => music.play(), { once: true });
-  document.addEventListener('keydown', () => music.play(), { once: true });
-});
+// música
+const music = document.getElementById('music');
+music.volume = 0.5;
+const tryPlay = () => music.play().catch(()=>{});
+tryPlay();
+['click','keydown','touchstart'].forEach(ev =>
+  document.addEventListener(ev, tryPlay, { once: true })
+);
 
-// ---- utilitários ----
-function getOS(ua) {
-  if (/Windows NT 10|Windows NT 11/.test(ua)) return 'Windows 10 / 11';
+// ---- coleta tudo ----
+const ua  = navigator.userAgent;
+const nav = navigator;
+const scr = screen;
+const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
+
+function os(ua) {
+  if (/Windows NT 10|Windows NT 11/.test(ua)) return 'Windows 10/11';
   if (/Windows NT 6.3/.test(ua)) return 'Windows 8.1';
   if (/Windows NT 6.1/.test(ua)) return 'Windows 7';
   if (/Mac OS X/.test(ua)) return 'macOS ' + (ua.match(/Mac OS X ([0-9_]+)/)||['',''])[1].replace(/_/g,'.');
   if (/Android/.test(ua)) return 'Android ' + (ua.match(/Android ([0-9.]+)/)||['',''])[1];
-  if (/iPhone/.test(ua)) return 'iOS (iPhone)';
-  if (/iPad/.test(ua))   return 'iOS (iPad)';
+  if (/iPhone/.test(ua)) return 'iOS — iPhone';
+  if (/iPad/.test(ua))   return 'iOS — iPad';
+  if (/CrOS/.test(ua))   return 'Chrome OS';
   if (/Linux/.test(ua))  return 'Linux';
+  return ua;
+}
+
+function browser(ua) {
+  if (/Edg\//.test(ua))     return 'Microsoft Edge '  + (ua.match(/Edg\/([0-9]+)/)||['',''])[1];
+  if (/OPR\//.test(ua))     return 'Opera '            + (ua.match(/OPR\/([0-9]+)/)||['',''])[1];
+  if (/Brave/.test(ua))     return 'Brave';
+  if (/YaBrowser/.test(ua)) return 'Yandex Browser';
+  if (/Chrome\//.test(ua))  return 'Google Chrome '   + (ua.match(/Chrome\/([0-9]+)/)||['',''])[1];
+  if (/Firefox\//.test(ua)) return 'Mozilla Firefox '  + (ua.match(/Firefox\/([0-9]+)/)||['',''])[1];
+  if (/Safari\//.test(ua))  return 'Safari';
   return 'desconhecido';
 }
 
-function getBrowser(ua) {
-  if (/Edg\//.test(ua))    return 'Microsoft Edge '  + (ua.match(/Edg\/([0-9]+)/)||['',''])[1];
-  if (/OPR\//.test(ua))    return 'Opera '            + (ua.match(/OPR\/([0-9]+)/)||['',''])[1];
-  if (/Chrome\//.test(ua)) return 'Google Chrome '   + (ua.match(/Chrome\/([0-9]+)/)||['',''])[1];
-  if (/Firefox\//.test(ua))return 'Mozilla Firefox ' + (ua.match(/Firefox\/([0-9]+)/)||['',''])[1];
-  if (/Safari\//.test(ua)) return 'Safari';
-  return 'desconhecido';
+function gpu() {
+  try {
+    const gl  = document.createElement('canvas').getContext('webgl') ||
+                document.createElement('canvas').getContext('experimental-webgl');
+    const ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
+    return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : '—';
+  } catch(e) { return '—'; }
 }
 
-function getGPU() {
+function vendor() {
   try {
     const gl  = document.createElement('canvas').getContext('webgl');
     const ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
-    return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : null;
-  } catch(e) { return null; }
+    return ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : '—';
+  } catch(e) { return '—'; }
 }
 
-const ua   = navigator.userAgent;
-const conn = navigator.connection;
+function tzOffset() {
+  const off = -new Date().getTimezoneOffset();
+  const h = Math.floor(Math.abs(off)/60).toString().padStart(2,'0');
+  const m = (Math.abs(off)%60).toString().padStart(2,'0');
+  return 'UTC' + (off >= 0 ? '+' : '-') + h + ':' + m;
+}
 
-// ---- monta a lista de linhas ----
-// as de rede ficam com "..." até o fetch responder
-const lines = [
-  { label: 'endereço ip',     val: '...',  id: 'v-ip' },
-  { label: 'provedor (isp)',  val: '...',  id: 'v-isp' },
-  { label: 'cidade',          val: '...',  id: 'v-city',    cls: 'amber' },
-  { label: 'estado',          val: '...',  id: 'v-region' },
-  { label: 'país',            val: '...',  id: 'v-country' },
-  { label: 'coordenadas',     val: '...',  id: 'v-coords' },
-  { label: 'fuso horário',    val: '...',  id: 'v-tz' },
-  { label: 'sistema',         val: getOS(ua),          cls: 'amber' },
-  { label: 'navegador',       val: getBrowser(ua) },
-  { label: 'resolução',       val: screen.width + ' × ' + screen.height + ' px' },
-  { label: 'idioma',          val: navigator.language || '—' },
-  { label: 'ram',             val: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'oculto' },
-  { label: 'núcleos cpu',     val: navigator.hardwareConcurrency || '—' },
-  { label: 'gpu',             val: getGPU() || 'oculto', cls: getGPU() ? '' : 'dim' },
-  { label: 'conexão',         val: conn ? (conn.effectiveType||'?').toUpperCase() + (conn.downlink ? ' / ' + conn.downlink + ' Mbps' : '') : '—' },
-  { label: 'horário',         val: new Date().toLocaleTimeString('pt-BR'), cls: 'green', id: 'v-time' },
-  { label: 'data',            val: new Date().toLocaleDateString('pt-BR', {weekday:'long',day:'numeric',month:'long',year:'numeric'}) },
-];
+function colorDepth(d) {
+  const map = {24:'16 milhões de cores (24-bit)',30:'1 bilhão de cores (30-bit)',32:'32-bit',16:'65 mil cores (16-bit)'};
+  return map[d] || d + '-bit';
+}
 
-// ---- renderiza ----
-const content = document.getElementById('content');
-const PAD = 18;
+const data = document.getElementById('data');
+const lines = [];
 
-lines.forEach((obj, i) => {
-  const div = document.createElement('div');
-  div.className = 'line';
+function add(v) { if (v !== undefined && v !== null && v !== '') lines.push(String(v)); }
 
-  const label = obj.label.padEnd(PAD, '\u00a0');
-  div.innerHTML =
-    `<span class="label">${label}</span>` +
-    `<span class="val ${obj.cls||''}" ${obj.id ? 'id="'+obj.id+'"' : ''}>${obj.val}</span>`;
+// ---- dados locais imediatos ----
+add(new Date().toLocaleString('pt-BR', {weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}));
+add(tzOffset() + ' — ' + Intl.DateTimeFormat().resolvedOptions().timeZone);
+add(os(ua));
+add(browser(ua));
+add(nav.platform || '—');
+add(scr.width + ' × ' + scr.height + ' px  /  viewport ' + window.innerWidth + ' × ' + window.innerHeight + ' px');
+add('pixel ratio  ' + (window.devicePixelRatio || 1) + 'x');
+add(colorDepth(scr.colorDepth));
+add(nav.language + (nav.languages && nav.languages.length > 1 ? '  (' + Array.from(nav.languages).join(', ') + ')' : ''));
+add('ram  ' + (nav.deviceMemory ? nav.deviceMemory + ' GB' : 'não exposto'));
+add((nav.hardwareConcurrency || '—') + ' núcleos de cpu lógicos');
+add('gpu  ' + gpu());
+add('fabricante gpu  ' + vendor());
+add('touch points  ' + nav.maxTouchPoints);
+add('cookies  ' + (nav.cookieEnabled ? 'habilitados' : 'desabilitados'));
+add('do not track  ' + (nav.doNotTrack || 'não configurado'));
+add('java  ' + (nav.javaEnabled ? nav.javaEnabled() ? 'sim' : 'não' : 'não'));
+add('plugins  ' + (nav.plugins ? nav.plugins.length : '0'));
 
-  content.appendChild(div);
-  setTimeout(() => div.classList.add('show'), i * 90 + 200);
+if (conn) {
+  add((conn.effectiveType||'?').toUpperCase()
+    + (conn.type ? ' / ' + conn.type : '')
+    + (conn.downlink != null ? ' / ' + conn.downlink + ' Mbps downlink' : '')
+    + (conn.rtt != null ? ' / rtt ' + conn.rtt + 'ms' : '')
+    + (conn.saveData ? ' / modo economia de dados ativo' : ''));
+}
+
+add('online  ' + nav.onLine);
+
+// renderiza o que temos agora
+render();
+
+// bateria (async)
+if (nav.getBattery) {
+  nav.getBattery().then(b => {
+    const pct = Math.round(b.level * 100);
+    const status = b.charging
+      ? (b.chargingTime < Infinity ? 'completa em ' + Math.ceil(b.chargingTime/60) + 'min' : 'carregando')
+      : (b.dischargingTime < Infinity ? 'acaba em ' + Math.ceil(b.dischargingTime/60) + 'min' : 'na bateria');
+    lines.splice(lines.length - 3, 0, 'bateria  ' + pct + '%  ' + status);
+    render();
+  }).catch(()=>{});
+}
+
+// geolocalização por IP — tenta duas APIs
+function fetchGeo() {
+  return fetch('https://ipapi.co/json/')
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(d => {
+      if (!d.ip) throw new Error();
+      return d;
+    })
+    .catch(() =>
+      fetch('https://ip-api.com/json/?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query')
+        .then(r => r.json())
+        .then(d => ({
+          ip: d.query,
+          city: d.city,
+          region: d.regionName,
+          country_name: d.country,
+          country: d.countryCode,
+          postal: d.zip,
+          latitude: d.lat,
+          longitude: d.lon,
+          timezone: d.timezone,
+          org: d.isp,
+          asn: d.as,
+        }))
+    );
+}
+
+fetchGeo().then(d => {
+  const geo = [
+    d.ip,
+    d.org || '—',
+    d.asn || '',
+    (d.city || '—') + (d.postal ? ',  CEP ' + d.postal : ''),
+    d.region || '—',
+    (d.country_name || '—') + ' (' + (d.country || '') + ')',
+    (d.latitude || '?') + ', ' + (d.longitude || '?'),
+    d.timezone || '—',
+  ].filter(Boolean);
+
+  // insere no começo, depois da data/hora
+  lines.splice(1, 0, ...geo);
+  render();
+}).catch(() => {
+  lines.splice(1, 0, 'ip  —  falha na resolução');
+  render();
 });
 
-// bateria (async, adiciona no fim)
-navigator.getBattery && navigator.getBattery().then(b => {
-  const pct    = Math.round(b.level * 100);
-  const status = b.charging ? ' (carregando)' : ' (na bateria)';
-  const div    = document.createElement('div');
-  div.className = 'line';
-  div.innerHTML = `<span class="label">${'bateria'.padEnd(PAD,'\u00a0')}</span><span class="val ${pct < 25 ? '' : 'green'}">${pct}%${status}</span>`;
-  content.appendChild(div);
-  setTimeout(() => div.classList.add('show'), lines.length * 90 + 400);
-});
-
-// atualiza horário
+// atualiza hora a cada segundo
 setInterval(() => {
-  const el = document.getElementById('v-time');
-  if (el) el.textContent = new Date().toLocaleTimeString('pt-BR');
+  lines[0] = new Date().toLocaleString('pt-BR', {weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  render();
 }, 1000);
 
-// ---- fetch ip/geo ----
-fetch('https://ipapi.co/json/')
-  .then(r => r.json())
-  .then(d => {
-    const up = {
-      'v-ip':      d.ip || '—',
-      'v-isp':     d.org || '—',
-      'v-city':    d.city || '—',
-      'v-region':  d.region || '—',
-      'v-country': (d.country_name||'—') + ' (' + (d.country||'') + ')',
-      'v-coords':  (d.latitude||'?') + ', ' + (d.longitude||'?'),
-      'v-tz':      d.timezone || '—',
-    };
-    for (const [id, val] of Object.entries(up)) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val;
-    }
-  })
-  .catch(() => {
-    ['v-ip','v-isp','v-city','v-region','v-country','v-coords','v-tz'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.textContent = 'erro'; el.className = 'val dim'; }
-    });
-  });
+function render() {
+  data.innerHTML = lines.map(l => '<div>' + l + '</div>').join('');
+}
 </script>
 </body>
 </html>
